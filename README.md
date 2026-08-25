@@ -5,8 +5,8 @@ built as a single self-contained `index.html` (no build step, no dependencies).
 
 ## View it
 
+- **Live (GitHub Pages):** https://ohshtnvm.github.io/southeast-asian-history-mindmap/
 - **Locally:** open `index.html` in any browser.
-- **Online (GitHub Pages):** enable Pages on the `main` branch, then visit the published URL.
 
 ## Interactions
 
