@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Southeast Asian History &amp; Civilizations — Interactive Mindmap</title>
+<style>
+  :root{
+    --bg:#f5f7fb;
+    --root:#c9cbf3;
+    --root-border:#a9abe6;
+    --b1:#aec6ec; /* level 1 */
+    --b2:#c3d6f2; /* level 2 */
+    --b3:#dbe7f8; /* level 3 */
+    --leaf:#eef3fb;
+    --line:#6f8fd6;
+    --text:#12203a;
+    --muted:#4a5a76;
+    --shadow:0 2px 6px rgba(30,50,90,.14);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;font-family:"Segoe UI",Roboto,system-ui,-apple-system,sans-serif;color:var(--text);background:var(--bg);overflow:hidden}
+
+  #toolbar{
+    position:fixed;top:0;left:0;right:0;height:52px;z-index:20;
+    display:flex;align-items:center;gap:10px;padding:0 16px;
+    background:rgba(255,255,255,.9);backdrop-filter:blur(6px);
+    border-bottom:1px solid #dce3ef;
+  }
+  #toolbar h1{font-size:15px;margin:0;font-weight:600;letter-spacing:.2px;white-space:nowrap}
+  #toolbar .spacer{flex:1}
+  #toolbar button{
+    font:inherit;font-size:13px;border:1px solid #c3cfe2;background:#fff;color:var(--muted);
+    padding:6px 12px;border-radius:8px;cursor:pointer;transition:.15s;white-space:nowrap;
+  }
+  #toolbar button:hover{background:#eef3fb;color:var(--text);border-color:#9db4de}
+  #hint{font-size:12px;color:#8a99b3;white-space:nowrap}
+
+  #stage{position:absolute;inset:52px 0 0 0;overflow:hidden;cursor:grab}
+  #stage.grabbing{cursor:grabbing}
+  #world{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
+  svg#links{position:absolute;top:0;left:0;overflow:visible;pointer-events:none}
+  path.link{fill:none;stroke:var(--line);stroke-width:2;opacity:.55}
+
+  .node{
+    position:absolute;transform:translateY(-50%);
+    display:flex;align-items:center;gap:8px;
+    padding:9px 14px;border-radius:12px;box-shadow:var(--shadow);
+    cursor:pointer;user-select:none;line-height:1.25;
+    border:1px solid rgba(90,120,180,.25);transition:filter .12s, box-shadow .12s;
+  }
+  .node:hover{filter:brightness(1.03);box-shadow:0 4px 12px rgba(30,50,90,.22)}
+  .node .label{font-weight:500}
+  .node .toggle{
+    flex:none;width:20px;height:20px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.65);font-size:12px;font-weight:700;color:var(--muted);
+  }
+  .node.collapsed .toggle{background:var(--line);color:#fff}
+
+  .node.lvl0{background:var(--root);border-color:var(--root-border);font-size:17px;font-weight:700;padding:14px 20px}
+  .node.lvl1{background:var(--b1);font-size:15px;font-weight:600}
+  .node.lvl2{background:var(--b2);font-size:13.5px}
+  .node.lvl3{background:var(--b3);font-size:13px}
+  .node.lvl4{background:var(--leaf);font-size:12.5px;color:var(--muted)}
+
+  .node .info{
+    display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:30;
+    width:max-content;max-width:340px;background:#fff;color:var(--text);
+    border:1px solid #cdd8ec;border-radius:10px;padding:10px 12px;font-size:12.5px;font-weight:400;
+    box-shadow:0 8px 24px rgba(20,40,80,.18);white-space:normal;line-height:1.45;
+  }
+  .node.show-info .info{display:block}
+
+  #minZoom{position:fixed;right:16px;bottom:16px;z-index:20;display:flex;gap:6px}
+  #minZoom button{width:34px;height:34px;border-radius:9px;border:1px solid #c3cfe2;background:#fff;font-size:17px;cursor:pointer;color:var(--muted)}
+  #minZoom button:hover{background:#eef3fb}
+  #legend{position:fixed;left:16px;bottom:16px;z-index:20;background:rgba(255,255,255,.9);border:1px solid #dce3ef;border-radius:10px;padding:8px 12px;font-size:11.5px;color:var(--muted);line-height:1.6}
+  #legend b{color:var(--text)}
+</style>
+</head>
+<body>
+  <div id="toolbar">
+    <h1>🗺️ Southeast Asian History &amp; Civilizations</h1>
+    <span class="spacer"></span>
+    <span id="hint">Click a node to expand · drag to pan · scroll to zoom</span>
+    <button id="expandBtn">Expand all</button>
+    <button id="collapseBtn">Collapse all</button>
+    <button id="resetBtn">Reset view</button>
+  </div>
+
+  <div id="stage">
+    <div id="world">
+      <svg id="links"></svg>
+    </div>
+  </div>
+
+  <div id="minZoom">
+    <button id="zoomOut">−</button>
+    <button id="zoomIn">+</button>
+    <button id="fit" title="Fit to screen">⤢</button>
+  </div>
+  <div id="legend">
+    Nodes with a <b>+</b> hold more detail. Leaf nodes with underlined dot show a note on click.
+  </div>
+
+<script>
+/* ============================================================
+   DATA — Southeast Asian History and Civilizations
+   Organized into the 7 primary branches.
+   `i` on a node adds an info tooltip (click to reveal).
+   ============================================================ */
+const DATA = {
+  name:"Southeast Asian History and Civilizations",
+  children:[
+
+    /* 1 ───────────────────────── GEOGRAPHY & LIVELIHOOD */
+    {name:"Geography and Livelihood", children:[
+      {name:"What is Southeast Asia?", i:"A region between the Indian and Pacific Oceans — warm climate, abundant resources, diverse cultures, many islands, mountains, rivers and coasts.", children:[
+        {name:"Mainland SEA", i:"Connected to the Asian continent; mountains, plains, forests, major rivers.", children:[
+          {name:"Myanmar"},{name:"Thailand"},{name:"Laos"},{name:"Cambodia"},{name:"Vietnam"}
+        ]},
+        {name:"Maritime SEA", i:"Mainly islands and archipelagos surrounded by seas and oceans.", children:[
+          {name:"Philippines"},{name:"Indonesia"},{name:"Malaysia"},{name:"Singapore"},{name:"Brunei"},{name:"Timor-Leste"}
+        ]}
+      ]},
+      {name:"Mainland Physical Features", children:[
+        {name:"Irrawaddy River", i:"In Myanmar — vital for farming, fishing, transport; supports irrigated rice."},
+        {name:"Mekong River", i:"One of SEA's longest rivers, crossing Laos, Thailand, Cambodia, Vietnam — agriculture, fishing, transport, settlement."},
+        {name:"Luang Prabang", i:"Historic cultural city in Laos near rivers & mountains; agriculture and tourism sustain it."},
+        {name:"Fertile valleys, plains, mountains, forests"}
+      ]},
+      {name:"Maritime Physical Features", children:[
+        {name:"Tropical Forests", i:"Provide timber, food and resources; support forest-dependent communities."},
+        {name:"Mangrove Ecosystems", i:"Fish breeding grounds; protect coasts from flooding & storms."},
+        {name:"Coral reefs, coastlines, marine biodiversity"}
+      ]},
+      {name:"Livelihoods", children:[
+        {name:"Agriculture (Rice)", i:"Rice farming thrives on warm climate, heavy rain, fertile valleys, flat plains and irrigation. Rice = staple food.", children:[
+          {name:"Mekong Basin — major rice area"},
+          {name:"Irrawaddy — irrigated rice in Myanmar"}
+        ]},
+        {name:"Seas & Fishing", children:[
+          {name:"Fishing, seaweed farming, maritime trade"},
+          {name:"Boat transport, tourism, diving"}
+        ]},
+        {name:"Mineral Resources", i:"Used in construction, electronics, manufacturing; must be managed to avoid environmental damage.", children:[
+          {name:"Indonesia — coal & nickel"},
+          {name:"Thailand — tin"},
+          {name:"Myanmar & Laos — mining"}
+        ]}
+      ]},
+      {name:"How Geography Shapes Livelihood", children:[
+        {name:"Rivers → farming, irrigation, fishing, transport"},
+        {name:"Seas → fishing, trade, tourism"},
+        {name:"Forests → food, wood, resources"},
+        {name:"Plains → farming & settlement"},
+        {name:"Mountains → forestry, farming, minerals"}
+      ]}
+    ]},
+
+    /* 2 ───────────────────────── HUMAN GEOGRAPHY & MIGRATION */
+    {name:"Human Geography and Migration", children:[
+      {name:"What is Human Geography?", i:"Studies how people live, organize and interact with places — linking people & place, culture & environment, society & resources.", children:[
+        {name:"Population"},{name:"Culture"},{name:"Ethnolinguistic Groups"},
+        {name:"Social Structure"},{name:"Religion & Beliefs"},{name:"Livelihood Patterns"}
+      ]},
+      {name:"11 Countries of SEA", i:"Diversity grew from ancient migrations, maritime trade, Indian & Chinese influence, European colonialism and cultural interaction.", children:[
+        {name:"Philippines, Indonesia, Malaysia"},
+        {name:"Singapore, Brunei, Timor-Leste"},
+        {name:"Vietnam, Cambodia, Laos"},
+        {name:"Thailand, Myanmar"}
+      ]},
+      {name:"Ethnolinguistic Groups", children:[
+        {name:"Austronesian", i:"One of the largest language families — skilled navigation, boat building, sea travel, marine resources."},
+        {name:"Austro-Asiatic", i:"Among oldest mainland groups — rice farming, river settlement, early kingdoms."},
+        {name:"Sino-Tibetan", i:"East Asian linguistic ties; often northern/mountainous communities."},
+        {name:"Kra-Dai", i:"Wet-rice farmers, tonal languages, organized villages."},
+        {name:"Hmong-Mien", i:"Highland subsistence farmers known for embroidery & textiles."},
+        {name:"Negrito", i:"Among earliest inhabitants — hunter-gatherers with deep forest knowledge."},
+        {name:"Indo-Aryan Influence", i:"Cultural/historical influence from South Asia via trade, religion and exchange."}
+      ]},
+      {name:"Religion", children:[
+        {name:"Islam", i:"Indonesia, Malaysia, Brunei, S. Philippines. One God (Allah), Quran, Five Pillars; shapes food (halal), dress, festivals, law.", children:[
+          {name:"Five Pillars: Faith, Prayer, Charity, Fasting, Pilgrimage"}
+        ]},
+        {name:"Buddhism", i:"Thailand, Myanmar, Laos, Cambodia, Vietnam. Teachings of Buddha, meditation, karma; temples as community centers.", children:[
+          {name:"Monks respected; shapes education & morals"}
+        ]},
+        {name:"Christianity", i:"Philippines & Timor-Leste. Belief in Jesus Christ, the Bible; churches shape education, health, community."},
+        {name:"Other Beliefs", children:[
+          {name:"Hinduism — esp. Bali"},
+          {name:"Animism — spirits of nature"},
+          {name:"Ancestor worship"}
+        ]}
+      ]},
+      {name:"Social Structure", children:[
+        {name:"Family", i:"Extended families common; elders respected; provides support, cultural transmission, economic cooperation."},
+        {name:"Gender Roles", i:"Traditionally men as providers, women as caregivers — now women increasingly in politics, business, education."},
+        {name:"Power Relations", i:"Authority distributed among government, teachers, parents, religious leaders."},
+        {name:"Patriarchy", i:"Men traditionally held greater authority; many societies now promote gender equality & women's leadership."}
+      ]},
+      {name:"Wave Migration Theory", i:"Proposed by Henry Otley Beyer (early 20th c.): separate migration waves reached the Philippines. Now rejected — evidence shows continuous migration & interaction, not isolated waves.", children:[
+        {name:"Waves: Dawn Man, Negritos, Australoid-Sakai, Indonesians, Malays, Orang Dampuan"},
+        {name:"Land Bridge idea", i:"Ice-Age lower seas exposed land bridges; rising seas later submerged them; later migrants used boats."},
+        {name:"Why rejected", i:"Archaeology, linguistics, anthropology and genetics show migration was more complex and interconnected."}
+      ]},
+      {name:"Modern Migration Study", children:[
+        {name:"Archaeology — artifacts & settlements"},
+        {name:"Anthropology — societies & cultures"},
+        {name:"Linguistics — languages"},
+        {name:"Genetics — DNA & traits"},
+        {name:"Geology — Earth's surface changes"}
+      ]},
+      {name:"The Austronesians", i:"A language family (term by Wilhelm Schmidt, 1899). Auster=south, Nesos=island → 'southern islands'. Found from Taiwan & Madagascar to New Zealand.", children:[
+        {name:"Skills: boat building, navigation, seafaring"},
+        {name:"Farming, pottery, weaving, tool-making"}
+      ]},
+      {name:"Out-of-Taiwan Theory", i:"Linked to Peter Bellwood — explains spread of Austronesian speakers.", children:[
+        {name:"Route: S. China → Taiwan → Batanes → Luzon → Philippines → Malaysia → Indonesia → Pacific → Madagascar"},
+        {name:"Evidence: languages, DNA, pottery, farming, boats, weaving"}
+      ]},
+      {name:"Nusantao Theory", i:"By Wilhelm Solheim II — maritime interaction developed around the Celebes Sea. Nusa=island, Tau=people → 'Island People'.", children:[
+        {name:"Fishermen, sailors, traders"},
+        {name:"NMTCN network spread languages, pottery, tools, technologies"}
+      ]},
+      {name:"Austroasiatic Theory", i:"Austroasiatic speakers spread across Mainland SEA (S. China, N. Thailand, Indochina).", children:[
+        {name:"Contributions: rice & taro farming, pottery"},
+        {name:"Interaction with Hoabinhian hunter-gatherers, who adopted farming"}
+      ]},
+      {name:"Philippines as a Gateway", i:"Not just a stopping point — a center of cultural interaction & exchange.", children:[
+        {name:"Gateway for Austronesian communities"},
+        {name:"Exchange of languages, farming, boats, pottery"},
+        {name:"Evidence: Balangay boats (Butuan), shared pottery, related languages"}
+      ]}
+    ]},
+
+    /* 3 ───────────────────────── EARLY CIVILIZATIONS & PREHISTORY */
+    {name:"Early Civilizations and Prehistory", children:[
+      {name:"What is Civilization?", i:"An advanced, organized society with government, economy, culture, technology. From Latin 'civitas' = city.", children:[
+        {name:"Cities & government"},
+        {name:"Economy & specialized jobs"},
+        {name:"Writing system"},
+        {name:"Art, architecture & technology"}
+      ]},
+      {name:"Neolithic Revolution", i:"Shift from hunting-gathering (nomadic) to agriculture & permanent settlement.", children:[
+        {name:"Learned to plant crops & harvest grains"},
+        {name:"Domesticated pigs, goats, cattle, chickens, dogs"},
+        {name:"Effect chain", i:"Agriculture → food surplus → population growth → permanent settlements → specialized jobs → trade → cultural development."}
+      ]},
+      {name:"Neolithic Cultures of SEA", children:[
+        {name:"Hoabinhian Culture", i:"Named after Hoa Binh, Vietnam — hunting, gathering, early farming, stone tools with sharp struck edges."},
+        {name:"Phung Nguyen Culture", i:"~2000 BCE in northern Vietnam. Graves held polished tools, pottery, evidence of rice, fishing, pig & dog raising — suggesting afterlife beliefs."}
+      ]}
+    ]},
+
+    /* 4 ───────────────────────── MAINLAND ANCIENT KINGDOMS */
+    {name:"Mainland Ancient Kingdoms", children:[
+      {name:"Funan (100–550 CE)", i:"Mekong Delta; capital Vyadhapura. Powerful through farming, trade (port of Oc Eo) and Indian influence (Indianization). Conquered by Chenla ~550 CE.", children:[
+        {name:"Kaundinya & Soma legend", i:"Marriage of Indian Brahmin Kaundinya & local princess Soma — symbolizes Indian trade & the blending of traditions (Indianization)."},
+        {name:"Trade at Oc Eo — spices, pearls, gold, silk"},
+        {name:"Indian influence: Hinduism, Buddhism, Sanskrit"}
+      ]},
+      {name:"Chenla (550–802 CE)", i:"Present-day Cambodia; Khmer people. King Ishanavarman built Ishanapura (613 CE). Split into Upper & Lower Chenla, weakening it.", children:[
+        {name:"Hinduism (Shiva, Vishnu) + Buddhism"},
+        {name:"Jayavarman II later unified the Khmer → Angkor (802)"}
+      ]},
+      {name:"Angkor (802–1431 CE)", i:"Founded by Jayavarman II; one of the most powerful mainland empires. Fell to Ayutthaya in 1431.", children:[
+        {name:"Devaraja (God-King)", i:"Jayavarman II linked kingship to divine legitimacy, strengthening royal authority."},
+        {name:"Religion: Hinduism (Shiva) → later Mahayana Buddhism"},
+        {name:"Water system", i:"Canals, reservoirs and barays for irrigation, storage, transport, defense and monument support."},
+        {name:"Suryavarman II (1113–1150)", i:"Commissioned Angkor Wat — Hindu temple to Vishnu; towers symbolize Mount Meru.", children:[
+          {name:"Angkor Wat — Khmer architectural masterpiece"}
+        ]},
+        {name:"Jayavarman VII (1181–1218)", i:"Defeated Champa; built Angkor Thom, hospitals, roads, bridges; promoted Mahayana Buddhism & people's welfare."}
+      ]},
+      {name:"Pagan (849–1297 CE)", i:"Present-day Myanmar; capital Bagan. King Anawrahta boosted irrigation & rice and promoted Theravada Buddhism. Declined as land-grants cut taxes; ended with Mongol (Kublai Khan) invasion.", children:[
+        {name:"Shwezigon & Shwesandaw Pagodas"}
+      ]},
+      {name:"Sukhothai (1238–1438)", i:"First independent Thai kingdom — 'Dawn of Happiness'. Founded when Pho Khun Bang Klang Hao (King Si Inthrathit) resisted Khmer rule. Absorbed by Ayutthaya in 1438.", children:[
+        {name:"King Ram Khamhaeng (1279–1298)", i:"Expanded the kingdom, promoted Theravada Buddhism, developed the Thai alphabet, grew trade with China and Si Satchanalai ceramics."}
+      ]},
+      {name:"Ayutthaya (1351–1767)", i:"Founded by U Thong (King Ramathibodi I) on a river island — trade access & natural defense. Major international trade center. Destroyed in 1767.", children:[
+        {name:"Traded silk, spices, ceramics, metals"},
+        {name:"Conquered by Toungoo 1569; freed under King Naresuan"}
+      ]},
+      {name:"Dai Viet — Le Dynasty (1428–1788)", i:"Present-day Vietnam. After harsh Ming rule, Le Loi (adviser Nguyen Trai) rebelled from 1418 and won in 1428, becoming King Le Thai To.", children:[
+        {name:"King Le Thanh Tong", i:"Civil service exams, administrative & tax reform, and the Hong Duc legal code."}
+      ]},
+      {name:"Toungoo (1486–1752)", i:"Present-day Myanmar. Founded by Minginyo; expanded by Tabinshwehti (capital Pegu) and reunified by Bayinnaung. Ended 1752 when the Mon captured Ava.", children:[
+        {name:"Pegu — major trading port & commerce center"}
+      ]}
+    ]},
+
+    /* 5 ───────────────────────── MARITIME & INSULAR CIVILIZATIONS */
+    {name:"Maritime and Insular Civilizations", children:[
+      {name:"Philippines & Regional Trade", i:"Not ruled by mainland kingdoms but active in regional trade networks.", children:[
+        {name:"Maritime Jade Road", i:"~2000 BCE–500 CE: jade moved Taiwan → Batanes → Luzon → Palawan → Vietnam → Thailand → Cambodia → Malaysia → Indonesia."},
+        {name:"Lingling-o", i:"Jade ornament linked to wealth, status and protection."},
+        {name:"Sukhothai Ceramics", i:"Sawankhalok/Sawankhalok ceramics in PH shipwrecks show pre-colonial long-distance trade."}
+      ]},
+      {name:"Sri Vijaya (683–1288 CE)", i:"Palembang, Sumatra. Controlled the Strait of Malacca & Sunda Strait; a Mahayana Buddhist learning center.", children:[
+        {name:"Products: camphor, tin, ivory, spices"},
+        {name:"Services: safe ports, lodging, ship repair"}
+      ]},
+      {name:"Majapahit (1293–1527)", i:"Eastern Java; founded by Raden Wijaya. Golden age under King Hayam Wuruk & PM Gajah Mada. Declined with civil wars, rise of Malacca & spread of Islam.", children:[
+        {name:"Trade: silk, porcelain, jade, cloth"},
+        {name:"Known for literature, poetry, Hindu temples"},
+        {name:"Ties with Cambodia, Thailand, Vietnam, China, PH"}
+      ]},
+      {name:"Sultanate of Malacca (1400–1511)", i:"Founded by Parameswara on the Malay Peninsula near the Strait of Malacca — one of Asia's busiest ports.", children:[
+        {name:"Trade: nutmeg, cloves, silk, porcelain, silver"}
+      ]},
+      {name:"Sailendra (8th–11th c.)", i:"Central Java; Mahayana Buddhist. Famous for building Borobudur Temple. Declined amid dynastic conflict & Chola attacks.", children:[
+        {name:"Borobudur — great Buddhist monument"}
+      ]}
+    ]},
+
+    /* 6 ───────────────────────── INTERRELATEDNESS & INFLUENCES */
+    {name:"Interrelatedness and Influences", children:[
+      {name:"Interrelatedness of Civilizations", i:"Civilizations never developed in isolation — they exchanged goods, writing, languages, religions, political ideas, art, science & technology.", children:[
+        {name:"Trade, migration, diplomacy"},
+        {name:"Religion, language, technology"}
+      ]},
+      {name:"Why SEA Mattered", i:"Strategic location between India & China made it a natural meeting point for merchants and civilizations.", children:[
+        {name:"India ↔ SEA ↔ China"},
+        {name:"Ships stopped at SEA ports; rulers gained wealth"}
+      ]},
+      {name:"Indianization", i:"Spread of Indian religion, language, politics & art in SEA. Historian George Coedès stressed it spread through trade, not conquest.", children:[
+        {name:"Religion: Hinduism & Buddhism (Angkor Wat, Borobudur)"},
+        {name:"Language: Sanskrit & Pallava script"},
+        {name:"Government: kingship, mandala, rajah title"},
+        {name:"Arts: Mahabharata & Ramayana in theater, dance, puppetry"}
+      ]},
+      {name:"Indian Influence in the Philippines", i:"Less Indianized than Cambodia/Indonesia, but archaeology shows Indian cultural influence.", children:[
+        {name:"Rajahnate of Sugbu (Sri Lumay)"},
+        {name:"Rajahnate of Butuan — gold, trade, China diplomacy"},
+        {name:"Butuan Silver Paleograph"},
+        {name:"Golden Tara", i:"Found in Agusan (1917) — a Hindu-Buddhist image showing precolonial religious influence."}
+      ]},
+      {name:"Sinification", i:"Spread of Chinese culture, politics, technology & customs into other societies.", children:[
+        {name:"Trade: goods, tribute, diplomatic missions"},
+        {name:"Government: administration, taxation, records"},
+        {name:"Migration: farming, business, cuisine, crafts"}
+      ]},
+      {name:"Vietnam & Sinification", i:"Long Chinese rule brought strong influence — administration, Confucianism, Chinese-style education. Yet Vietnam kept its identity (language, Chữ Nôm script).", children:[
+        {name:"Indianization = cultural/religious via trade"},
+        {name:"Sinification = cultural + political, incl. direct rule"}
+      ]}
+    ]},
+
+    /* 7 ───────────────────────── EUROPEAN COLONIALISM */
+    {name:"European Colonialism", children:[
+      {name:"Colonialism", i:"Direct political, economic & social control of one country over another. Spain ruled the Philippines 300+ years — government control, taxes, Christianization, resource exploitation."},
+      {name:"Why Europeans Colonized", children:[
+        {name:"Mercantilism", i:"Economic system of the Age of Exploration — accumulate gold/silver, gain raw materials, control markets, expand colonies.", children:[
+          {name:"Colonies gave raw materials, markets, wealth"}
+        ]},
+        {name:"Spread of Christianity", i:"Missionaries taught Christianity, built churches, converted locals — a justification for expansion."}
+      ]},
+      {name:"Trade Background", children:[
+        {name:"Silk Road", i:"Network of land & sea routes linking Europe & Asia — silk, jade, gold, pepper, cloves, nutmeg, cinnamon."},
+        {name:"Why Spices Mattered", i:"Used to preserve & flavor food, as medicine & perfume — expensive, so Europeans sought direct Asian sources."},
+        {name:"Fall of Constantinople (1453)", i:"Ottomans captured Constantinople, raising trade costs & competition — pushing Europeans to seek new routes (Age of Exploration)."}
+      ]},
+      {name:"Age of Exploration", i:"Enabled by technology: compass (direction), astrolabe (latitude), caravel (fast, maneuverable ship). Portugal & Spain led.", children:[
+        {name:"Portuguese Exploration", children:[
+          {name:"Prince Henry the Navigator"},
+          {name:"Bartolomeu Dias (1488) — Cape of Good Hope"},
+          {name:"Vasco da Gama (1498) — Calicut, India"},
+          {name:"Expanded to Malacca, Timor, Moluccas — spice trade"}
+        ]},
+        {name:"Spanish Exploration", children:[
+          {name:"Columbus (1492) — reached the Americas"},
+          {name:"Treaty of Tordesillas (1494)", i:"Spain & Portugal divided newly explored lands: Spain west, Portugal east of the line."}
+        ]}
+      ]},
+      {name:"Portuguese Colonialism in SEA", i:"Conquered Malacca (1511) under Afonso de Albuquerque to control the strait & spice trade. Focused on trade & Christianization over administration.", children:[
+        {name:"Ports-and-Forts system: ports, forts, churches"}
+      ]},
+      {name:"Spanish Colonialism in the Philippines", children:[
+        {name:"Ferdinand Magellan (1521)", i:"Reached Homonhon, Limasawa, Cebu; introduced Christianity; killed by Lapulapu at the Battle of Mactan."},
+        {name:"Miguel López de Legazpi (1565)", i:"Founded the first permanent Spanish settlement in Cebu; Manila later became the capital."},
+        {name:"Colonial Institutions", i:"Governor-General, Encomienda, Reducción, Polo y Servicio, Tribute, Bandala, Galleon Trade — Spain ruled 300+ years."}
+      ]},
+      {name:"Dutch Colonialism", i:"Dutch East India Company (VOC), 1602 — control spice trade, challenge Portugal. Held Batavia (Jakarta) & the Moluccas; captured Malacca 1641. Focused on commerce over Christianization."},
+      {name:"British Colonialism", i:"British East India Company (1600) — focused on India but active in SEA. Captured Manila in 1762 (Seven Years' War) and returned it to Spain after the war."}
+    ]}
+  ]
+};
+
+/* ============================================================
+   LAYOUT + RENDER
+   ============================================================ */
+const stage = document.getElementById('stage');
+const world = document.getElementById('world');
+const svg   = document.getElementById('links');
+
+const COL_W = 300;      // horizontal spacing per depth
+const ROW_H = 46;       // vertical spacing per leaf row
+let uid = 0;
+
+/* prepare tree: give ids, collapse deeper levels by default */
+function prep(node, depth){
+  node._id = uid++;
+  node.depth = depth;
+  node._collapsed = depth >= 2;   // show root + level 1 + level 2 open, deeper collapsed
+  if(node.children) node.children.forEach(c=>prep(c, depth+1));
+}
+prep(DATA, 0);
+
+let rowCursor = 0;
+/* assign layout coords to visible nodes; returns {minY,maxY} */
+function layout(node){
+  node.x = node.depth * COL_W;
+  const kids = (!node._collapsed && node.children) ? node.children : null;
+  if(kids && kids.length){
+    let first=null, last=null;
+    kids.forEach(c=>{ layout(c); if(first===null) first=c.y; last=c.y; });
+    node.y = (first + last)/2;
+  }else{
+    node.y = rowCursor * ROW_H;
+    rowCursor++;
+  }
+}
+
+function collectVisible(node, arr, links, parent){
+  arr.push(node);
+  if(parent) links.push([parent, node]);
+  if(!node._collapsed && node.children) node.children.forEach(c=>collectVisible(c, arr, links, node));
+}
+
+function render(){
+  rowCursor = 0;
+  layout(DATA);
+
+  const nodes=[], links=[];
+  collectVisible(DATA, nodes, links, null);
+
+  // clear
+  world.querySelectorAll('.node').forEach(n=>n.remove());
+  svg.innerHTML='';
+
+  // bounds
+  let maxX=0, maxY=0, minY=Infinity;
+  nodes.forEach(n=>{ maxX=Math.max(maxX,n.x); maxY=Math.max(maxY,n.y); minY=Math.min(minY,n.y); });
+  const padTop = 40 - minY; // shift so top row isn't clipped
+  svg.style.width = (maxX + COL_W) + 'px';
+  svg.style.height = (maxY + padTop + 80) + 'px';
+
+  // links (bezier)
+  links.forEach(([p,c])=>{
+    const x1=p.x + nodeHalfWidth(p), y1=p.y + padTop;
+    const x2=c.x, y2=c.y + padTop;
+    const mx=(x1+x2)/2;
+    const d=`M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`;
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d',d); path.setAttribute('class','link');
+    svg.appendChild(path);
+  });
+
+  // nodes
+  nodes.forEach(n=>{
+    const el=document.createElement('div');
+    const lvl=Math.min(n.depth,4);
+    el.className='node lvl'+lvl + (n._collapsed && n.children ? ' collapsed':'');
+    el.style.left = n.x + 'px';
+    el.style.top  = (n.y + padTop) + 'px';
+
+    let html='';
+    if(n.children){
+      const sign = n._collapsed ? '+' : '−';
+      html += `<span class="toggle">${sign}</span>`;
+    }
+    html += `<span class="label">${escapeHtml(n.name)}</span>`;
+    if(n.i){ html += `<span class="info">${escapeHtml(n.i)}</span>`; }
+    el.innerHTML = html;
+
+    el.addEventListener('click',(e)=>{
+      e.stopPropagation();
+      if(n.children){
+        n._collapsed=!n._collapsed;
+        render();
+      }else if(n.i){
+        el.classList.toggle('show-info');
+      }
+    });
+    world.appendChild(el);
+  });
+
+  // stash width after DOM for next link calc pass
+  requestAnimationFrame(()=>{ nodes.forEach(n=>{ /* noop, widths cached via estimate */ }); });
+}
+
+/* estimate half-width for link start (root/level nodes are wider) */
+function nodeHalfWidth(n){
+  const est = Math.min(n.name.length*7.2 + 46, 300);
+  return est; // full width approx from left edge to right edge
+}
+
+function escapeHtml(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+/* ============================================================
+   PAN + ZOOM
+   ============================================================ */
+let scale=1, tx=40, ty=20;
+function applyTransform(){ world.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`; }
+
+let dragging=false, sx=0, sy=0, stx=0, sty=0;
+stage.addEventListener('mousedown',e=>{
+  if(e.target.closest('.node')) return;
+  dragging=true; stage.classList.add('grabbing');
+  sx=e.clientX; sy=e.clientY; stx=tx; sty=ty;
+});
+window.addEventListener('mousemove',e=>{
+  if(!dragging)return;
+  tx=stx+(e.clientX-sx); ty=sty+(e.clientY-sy); applyTransform();
+});
+window.addEventListener('mouseup',()=>{dragging=false; stage.classList.remove('grabbing');});
+
+stage.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const rect=stage.getBoundingClientRect();
+  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+  const factor= e.deltaY<0 ? 1.12 : 1/1.12;
+  const ns=Math.min(2.2, Math.max(0.25, scale*factor));
+  // zoom toward cursor
+  tx = mx - (mx - tx)*(ns/scale);
+  ty = my - (my - ty)*(ns/scale);
+  scale=ns; applyTransform();
+},{passive:false});
+
+/* fit whole map to screen */
+function fit(){
+  const b=svg.getBoundingClientRect();
+  const w=svg.offsetWidth||1, h=svg.offsetHeight||1;
+  const availW=stage.clientWidth-60, availH=stage.clientHeight-60;
+  scale=Math.min(availW/w, availH/h, 1);
+  tx=30; ty=(stage.clientHeight - h*scale)/2;
+  if(ty<20) ty=20;
+  applyTransform();
+}
+
+/* ============================================================
+   CONTROLS
+   ============================================================ */
+function setAll(node, collapsed){
+  if(node.children){ node._collapsed=collapsed; node.children.forEach(c=>setAll(c,collapsed)); }
+}
+document.getElementById('expandBtn').onclick=()=>{ setAll(DATA,false); DATA._collapsed=false; render(); };
+document.getElementById('collapseBtn').onclick=()=>{ DATA.children.forEach(c=>setAll(c,true)); DATA._collapsed=false; render(); };
+document.getElementById('resetBtn').onclick=()=>{ location.reload(); };
+document.getElementById('zoomIn').onclick=()=>{ scale=Math.min(2.2,scale*1.15); applyTransform(); };
+document.getElementById('zoomOut').onclick=()=>{ scale=Math.max(0.25,scale/1.15); applyTransform(); };
+document.getElementById('fit').onclick=fit;
+
+render();
+applyTransform();
+</script>
+</body>
+</html>
